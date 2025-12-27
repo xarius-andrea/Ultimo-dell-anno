@@ -79,11 +79,12 @@ input:focus{outline:none;background:#e8f0fe;border-radius:6px}
 </div>
 </div>
 
-<script type="module">
-import { initializeApp } from "firebase/app";
-import { getDatabase, ref, onValue, push, set, update, remove } from "firebase/database";
+<!-- Firebase CDN -->
+<script src="https://www.gstatic.com/firebasejs/10.21.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.21.0/firebase-database-compat.js"></script>
 
-// 🔥 Config Firebase
+<script>
+// Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyByVZHzFIUcsGibzWkCuxn1nKevrvTTOc0",
   authDomain: "capodanno-c2669.firebaseapp.com",
@@ -94,20 +95,19 @@ const firebaseConfig = {
   appId: "1:656788642680:web:3db3d5f76679f34595468d"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 let state = { estimated:10, people:[], items:[], alcohol:[] };
 
 // ===== RENDER =====
-function render() {
+function render(){
   document.getElementById('estimated').value = state.estimated;
 
-  // Partecipanti
   const pBody = document.querySelector('#people tbody');
   pBody.innerHTML='';
   state.people.forEach(p=>{
     const tr = document.createElement('tr');
-    tr.innerHTML=`
+    tr.innerHTML = `
       <td><input class="name" value="${p.name}"></td>
       <td><input type="checkbox" class="paid" ${p.paid?'checked':''}></td>
       <td><input type="checkbox" class="drink" ${p.drink?'checked':''}></td>
@@ -166,46 +166,42 @@ function calc(){
 }
 
 // ===== AZIONI =====
-window.addPerson = () => {
-  const newPerson = {name:'',paid:false,drink:true};
-  const pRef = push(ref(db,'capodanno/people'));
+function addPerson(){
+  const newPerson = {name:'', paid:false, drink:true};
+  const pRef = db.ref('capodanno/people').push();
   newPerson.key = pRef.key;
   state.people.push(newPerson);
   render();
-  set(pRef,newPerson);
-};
+  pRef.set(newPerson);
+}
+function savePerson(p){ db.ref(`capodanno/people/${p.key}`).update({name:p.name, paid:p.paid, drink:p.drink}); }
+function removePerson(p){ db.ref(`capodanno/people/${p.key}`).remove(); }
 
-function savePerson(p){ update(ref(db,`capodanno/people/${p.key}`),{name:p.name,paid:p.paid,drink:p.drink}); }
-function removePerson(p){ remove(ref(db,`capodanno/people/${p.key}`)); }
-
-window.addItem = id => {
-  const newItem = {name:'',price:0};
-  const iRef = push(ref(db,`capodanno/${id}`));
+function addItem(id){
+  const newItem = {name:'', price:0};
+  const iRef = db.ref(`capodanno/${id}`).push();
   newItem.key = iRef.key;
   state[id].push(newItem);
   render();
-  set(iRef,newItem);
-};
-function saveItem(id,r){ update(ref(db,`capodanno/${id}/${r.key}`),{name:r.name,price:r.price}); }
-function removeItem(id,r){ remove(ref(db,`capodanno/${id}/${r.key}`)); }
+  iRef.set(newItem);
+}
+function saveItem(id,r){ db.ref(`capodanno/${id}/${r.key}`).update({name:r.name, price:r.price}); }
+function removeItem(id,r){ db.ref(`capodanno/${id}/${r.key}`).remove(); }
 
-document.getElementById('estimated').oninput = e => {
+document.getElementById('estimated').oninput = e=>{
   state.estimated=parseFloat(e.target.value)||0;
-  update(ref(db,'capodanno'),{estimated:state.estimated});
+  db.ref('capodanno').update({estimated:state.estimated});
 };
 
 // ===== SYNC FIREBASE =====
-onValue(ref(db,'capodanno'),snap=>{
-  if(snap.exists()){
-    const dbState = snap.val();
-    state.estimated = dbState.estimated||10;
-    state.people = Object.entries(dbState.people||{}).map(([k,v])=>({...v,key:k}));
-    state.items = Object.entries(dbState.items||{}).map(([k,v])=>({...v,key:k}));
-    state.alcohol = Object.entries(dbState.alcohol||{}).map(([k,v])=>({...v,key:k}));
-    render();
-  }
+db.ref('capodanno').on('value', snap=>{
+  const dbState = snap.val()||{};
+  state.estimated = dbState.estimated||10;
+  state.people = dbState.people ? Object.entries(dbState.people).map(([k,v])=>({...v,key:k})) : [];
+  state.items = dbState.items ? Object.entries(dbState.items).map(([k,v])=>({...v,key:k})) : [];
+  state.alcohol = dbState.alcohol ? Object.entries(dbState.alcohol).map(([k,v])=>({...v,key:k})) : [];
+  render();
 });
-
 </script>
 </body>
 </html>
