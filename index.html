@@ -89,18 +89,20 @@ input:focus{outline:none;background:#e8f0fe;border-radius:6px}
 <script src="https://www.gstatic.com/firebasejs/10.21.0/firebase-database-compat.js"></script>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyByVZHzFIUcsGibzWkCuxn1nKevrvTTOc0",
-  authDomain: "capodanno-c2669.firebaseapp.com",
-  databaseURL: "https://capodanno-c2669-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "capodanno-c2669",
-  storageBucket: "capodanno-c2669.appspot.com",
-  messagingSenderId: "656788642680",
-  appId: "1:656788642680:web:3db3d5f76679f34595468d"
-};
+  console.log('firebase:', typeof firebase);
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+  const firebaseConfig = {
+    apiKey: "AIzaSyByVZHzFIUcsGibzWkCuxn1nKevrvTTOc0",
+    authDomain: "capodanno-c2669.firebaseapp.com",
+    databaseURL: "https://capodanno-c2669-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "capodanno-c2669",
+    storageBucket: "capodanno-c2669.appspot.com",
+    messagingSenderId: "656788642680",
+    appId: "1:656788642680:web:3db3d5f76679f34595468d"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
 let state = { estimated:10, people:[], items:[], alcohol:[] };
 
