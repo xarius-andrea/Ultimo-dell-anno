@@ -9,7 +9,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;bac
 header{background:#111;color:#fff;padding:1rem;text-align:center}
 section{padding:1rem}
 .card{background:#fff;border-radius:14px;padding:1rem;margin-bottom:1rem;box-shadow:0 2px 10px rgba(0,0,0,.08)}
-h2{margin-top:0;font-size:1.2rem}
+h2{margin-top:0;font-size:.9rem}
 button{background:#111;color:#fff;border:none;border-radius:10px;padding:.4rem .7rem;font-size:.85rem}
 button.remove{background:#b00020}
 button.add{margin-top:.5rem}
@@ -36,7 +36,7 @@ input:focus{outline:none;background:#e8f0fe;border-radius:6px}
 <thead><tr><th>Nome</th><th>Pagato</th><th>Alcol</th><th></th></tr></thead>
 <tbody></tbody>
 </table>
-<button class="add" onclick="addPerson()">➕ Aggiungi partecipante</button>
+<button id="addPersonBtn" class="add">➕ Aggiungi partecipante</button>
 </section>
 
 <section class="card">
@@ -45,7 +45,7 @@ input:focus{outline:none;background:#e8f0fe;border-radius:6px}
 <thead><tr><th>Voce</th><th>€</th><th></th></tr></thead>
 <tbody></tbody>
 </table>
-<button class="add" onclick="addItem('items')">➕ Aggiungi voce</button>
+<button id="addItemBtn" class="add">➕ Aggiungi voce</button>
 </section>
 
 <section class="card">
@@ -54,7 +54,7 @@ input:focus{outline:none;background:#e8f0fe;border-radius:6px}
 <thead><tr><th>Alcolico</th><th>€</th><th></th></tr></thead>
 <tbody></tbody>
 </table>
-<button class="add" onclick="addItem('alcohol')">➕ Aggiungi alcolico</button>
+<button id="addAlcoholBtn" class="add">➕ Aggiungi alcolico</button>
 </section>
 
 <section class="card">
@@ -83,8 +83,7 @@ input:focus{outline:none;background:#e8f0fe;border-radius:6px}
 <script src="https://www.gstatic.com/firebasejs/10.21.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.21.0/firebase-database-compat.js"></script>
 
-<script>
-// Config Firebase
+<script type="module">
 const firebaseConfig = {
   apiKey: "AIzaSyByVZHzFIUcsGibzWkCuxn1nKevrvTTOc0",
   authDomain: "capodanno-c2669.firebaseapp.com",
@@ -192,6 +191,11 @@ document.getElementById('estimated').oninput = e=>{
   state.estimated=parseFloat(e.target.value)||0;
   db.ref('capodanno').update({estimated:state.estimated});
 };
+
+// ===== EVENT LISTENER BOTTONI =====
+document.getElementById('addPersonBtn').addEventListener('click', ()=>addPerson());
+document.getElementById('addItemBtn').addEventListener('click', ()=>addItem('items'));
+document.getElementById('addAlcoholBtn').addEventListener('click', ()=>addItem('alcohol'));
 
 // ===== SYNC FIREBASE =====
 db.ref('capodanno').on('value', snap=>{
