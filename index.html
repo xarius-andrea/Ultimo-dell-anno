@@ -60,19 +60,16 @@ input:focus{outline:none;background:#e8f0fe;border-radius:6px}
 <section class="card">
 <h2>Quote</h2>
 <div class="summary">
-
 <div class="summary-group">
 <h3>Quota base</h3>
 <div>Quota stimata: € <input type="number" id="estimated" value="10" step="0.1"></div>
 </div>
-
 <div class="summary-group">
 <h3>Alcolici</h3>
 <div>Totale alcolici: € <span id="alcoholTotal">0.00</span></div>
 <div>Costo alcolici a persona: € <span id="alcoholPer">0.00</span></div>
 <div>Quota senza alcolici: € <span id="noAlcohol">0.00</span></div>
 </div>
-
 <div class="summary-group">
 <h3>Riepilogo quote</h3>
 <div>Totale quote ricevute: € <span id="received">0.00</span></div>
@@ -80,15 +77,13 @@ input:focus{outline:none;background:#e8f0fe;border-radius:6px}
 <div>Budget rimanente: € <span id="remaining">0.00</span></div>
 <div>Budget rimanente stimato: € <span id="remainingEstimated">0.00</span></div>
 </div>
-
 </div>
-</section>
 
 <script type="module">
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, onValue, push, update, remove } from "firebase/database";
+import { getDatabase, ref, onValue, push, set, update, remove } from "firebase/database";
 
-// 🔥 Inserisci i tuoi dati Firebase
+// 🔥 Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyByVZHzFIUcsGibzWkCuxn1nKevrvTTOc0",
   authDomain: "capodanno-c2669.firebaseapp.com",
@@ -101,7 +96,6 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
 let state = { estimated:10, people:[], items:[], alcohol:[] };
 
 // ===== RENDER =====
@@ -111,7 +105,7 @@ function render() {
   // Partecipanti
   const pBody = document.querySelector('#people tbody');
   pBody.innerHTML='';
-  state.people.forEach((p,i)=>{
+  state.people.forEach(p=>{
     const tr = document.createElement('tr');
     tr.innerHTML=`
       <td><input class="name" value="${p.name}"></td>
@@ -119,9 +113,9 @@ function render() {
       <td><input type="checkbox" class="drink" ${p.drink?'checked':''}></td>
       <td><button class="remove">✖</button></td>
     `;
-    tr.querySelector('.name').oninput = e => { p.name = e.target.value; savePerson(p); };
-    tr.querySelector('.paid').onchange = e => { p.paid = e.target.checked; savePerson(p); };
-    tr.querySelector('.drink').onchange = e => { p.drink = e.target.checked; savePerson(p); };
+    tr.querySelector('.name').oninput = e => { p.name=e.target.value; savePerson(p); };
+    tr.querySelector('.paid').onchange = e => { p.paid=e.target.checked; savePerson(p); };
+    tr.querySelector('.drink').onchange = e => { p.drink=e.target.checked; savePerson(p); };
     tr.querySelector('button').onclick = () => { removePerson(p); };
     pBody.appendChild(tr);
   });
@@ -134,15 +128,15 @@ function render() {
 function renderTable(id){
   const body = document.querySelector(`#${id} tbody`);
   body.innerHTML='';
-  state[id].forEach((r)=>{
+  state[id].forEach(r=>{
     const tr = document.createElement('tr');
     tr.innerHTML=`
       <td><input class="name" value="${r.name}"></td>
       <td><input type="number" step="0.01" value="${r.price}"></td>
       <td><button class="remove">✖</button></td>
     `;
-    tr.querySelector('.name').oninput = e => { r.name = e.target.value; saveItem(id,r); };
-    tr.querySelector('input[type=number]').oninput = e => { r.price = parseFloat(e.target.value)||0; saveItem(id,r); };
+    tr.querySelector('.name').oninput = e => { r.name=e.target.value; saveItem(id,r); };
+    tr.querySelector('input[type=number]').oninput = e => { r.price=parseFloat(e.target.value)||0; saveItem(id,r); };
     tr.querySelector('button').onclick = () => { removeItem(id,r); };
     body.appendChild(tr);
   });
@@ -156,19 +150,19 @@ function calc(){
   const alcohol = sum(state.alcohol);
   const drinkers = state.people.filter(p=>p.drink).length;
   const nonDrinkers = state.people.filter(p=>!p.drink).length;
-  const alcoholPer = drinkers ? alcohol/drinkers : 0;
-  const quotaNo = Math.max(state.estimated - alcoholPer,0);
-  const received = state.people.filter(p=>p.paid).length * state.estimated;
-  const totalEstimated = (drinkers*state.estimated) + (nonDrinkers*quotaNo);
-  const spent = food + alcohol;
+  const alcoholPer = drinkers?alcohol/drinkers:0;
+  const quotaNo = Math.max(state.estimated-alcoholPer,0);
+  const received = state.people.filter(p=>p.paid).length*state.estimated;
+  const totalEstimated = (drinkers*state.estimated)+(nonDrinkers*quotaNo);
+  const spent = food+alcohol;
 
-  document.getElementById('alcoholTotal').textContent = alcohol.toFixed(2);
-  document.getElementById('alcoholPer').textContent = alcoholPer.toFixed(2);
-  document.getElementById('noAlcohol').textContent = quotaNo.toFixed(2);
-  document.getElementById('received').textContent = received.toFixed(2);
-  document.getElementById('totalEstimated').textContent = totalEstimated.toFixed(2);
-  document.getElementById('remaining').textContent = (received-spent).toFixed(2);
-  document.getElementById('remainingEstimated').textContent = (totalEstimated-spent).toFixed(2);
+  document.getElementById('alcoholTotal').textContent=alcohol.toFixed(2);
+  document.getElementById('alcoholPer').textContent=alcoholPer.toFixed(2);
+  document.getElementById('noAlcohol').textContent=quotaNo.toFixed(2);
+  document.getElementById('received').textContent=received.toFixed(2);
+  document.getElementById('totalEstimated').textContent=totalEstimated.toFixed(2);
+  document.getElementById('remaining').textContent=(received-spent).toFixed(2);
+  document.getElementById('remainingEstimated').textContent=(totalEstimated-spent).toFixed(2);
 }
 
 // ===== AZIONI =====
@@ -178,45 +172,33 @@ window.addPerson = () => {
   newPerson.key = pRef.key;
   state.people.push(newPerson);
   render();
-  pRef.set(newPerson);
+  set(pRef,newPerson);
 };
 
-function savePerson(p){
-  update(ref(db, `capodanno/people/${p.key}`), {name:p.name, paid:p.paid, drink:p.drink});
-}
+function savePerson(p){ update(ref(db,`capodanno/people/${p.key}`),{name:p.name,paid:p.paid,drink:p.drink}); }
+function removePerson(p){ remove(ref(db,`capodanno/people/${p.key}`)); }
 
-function removePerson(p){
-  remove(ref(db, `capodanno/people/${p.key}`));
-}
-
-// Items / Alcolici
 window.addItem = id => {
-  const newItem = {name:'', price:0};
-  const itemRef = push(ref(db, `capodanno/${id}`));
-  newItem.key = itemRef.key;
+  const newItem = {name:'',price:0};
+  const iRef = push(ref(db,`capodanno/${id}`));
+  newItem.key = iRef.key;
   state[id].push(newItem);
   render();
-  itemRef.set(newItem);
+  set(iRef,newItem);
 };
-
-function saveItem(id,r){
-  update(ref(db, `capodanno/${id}/${r.key}`), {name:r.name, price:r.price});
-}
-
-function removeItem(id,r){
-  remove(ref(db, `capodanno/${id}/${r.key}`));
-}
+function saveItem(id,r){ update(ref(db,`capodanno/${id}/${r.key}`),{name:r.name,price:r.price}); }
+function removeItem(id,r){ remove(ref(db,`capodanno/${id}/${r.key}`)); }
 
 document.getElementById('estimated').oninput = e => {
-  state.estimated = parseFloat(e.target.value)||0;
+  state.estimated=parseFloat(e.target.value)||0;
   update(ref(db,'capodanno'),{estimated:state.estimated});
 };
 
-// ===== FIREBASE SYNC =====
-onValue(ref(db,'capodanno'), snap => {
+// ===== SYNC FIREBASE =====
+onValue(ref(db,'capodanno'),snap=>{
   if(snap.exists()){
     const dbState = snap.val();
-    state.estimated = dbState.estimated || 10;
+    state.estimated = dbState.estimated||10;
     state.people = Object.entries(dbState.people||{}).map(([k,v])=>({...v,key:k}));
     state.items = Object.entries(dbState.items||{}).map(([k,v])=>({...v,key:k}));
     state.alcohol = Object.entries(dbState.alcohol||{}).map(([k,v])=>({...v,key:k}));
