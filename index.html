@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Festa 31 Dicembre</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#f4f4f4;color:#222}
+header{background:#111;color:#fff;padding:1rem;text-align:center}
+section{padding:1rem}
+.card{background:#fff;border-radius:14px;padding:1rem;margin-bottom:1rem;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+h2{margin-top:0;font-size:1.2rem}
+button{background:#111;color:#fff;border:none;border-radius:10px;padding:.4rem .7rem;font-size:.85rem}
+button.remove{background:#b00020}
+button.add{margin-top:.5rem}
+table{width:100%;border-collapse:collapse}
+th,td{padding:.4rem;font-size:.85rem}
+th{background:#eee;text-align:left}
+tr:nth-child(even) td{background:#fafafa}
+input[type=text],input[type=number]{width:100%;border:none;background:transparent;font-size:.85rem}
+input:focus{outline:none;background:#e8f0fe;border-radius:6px}
+.summary{display:grid;gap:1rem}
+.summary-group{border-radius:16px;padding:1rem;background:#fafafa;box-shadow:inset 0 0 0 1px #e5e5e5}
+.summary-group h3{margin:.2rem 0 .6rem 0;font-size:.95rem;color:#444}
+.summary-group div{margin:.35rem 0;font-weight:500}
+.summary strong{font-weight:700}
+.small{font-size:.8rem;color:#555}
+</style>
+</head>
+<body>
+<header><h1>Ultimo dell'anno</h1></header>
+
+<section class="card">
+<h2>Partecipanti</h2>
+<table id="people">
+<thead><tr><th>Nome</th><th>Pagato</th><th>Alcol</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+<button class="add" onclick="addPerson()">➕ Aggiungi partecipante</button>
+</section>
+
+<section class="card">
+<h2>Spese cibo / materiali</h2>
+<table id="items">
+<thead><tr><th>Voce</th><th>€</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+<button class="add" onclick="addItem('items')">➕ Aggiungi voce</button>
+</section>
+
+<section class="card">
+<h2>Spese alcolici</h2>
+<table id="alcohol">
+<thead><tr><th>Alcolico</th><th>€</th><th></th></tr></thead>
+<tbody></tbody>
+</table>
+<button class="add" onclick="addItem('alcohol')">➕ Aggiungi alcolico</button>
+</section>
+
+<section class="card">
+<h2>Quote</h2>
+<div class="summary">
+
+<div class="summary-group">
+<h3>Quota base</h3>
+<div>Quota stimata: € <input type="number" id="estimated" value="10" step="0.1"></div>
+</div>
+
+<div class="summary-group">
+<h3>Alcolici</h3>
+<div>Totale alcolici: € <span id="alcoholTotal">0.00</span></div>
+<div>Costo alcolici a persona: € <span id="alcoholPer">0.00</span></div>
+<div>Quota senza alcolici: € <span id="noAlcohol">0.00</span></div>
+</div>
+
+<div class="summary-group">
+<h3>Riepilogo quote</h3>
+<div>Totale quote ricevute: € <span id="received">0.00</span></div>
+<div>Quote totali stimate: € <span id="totalEstimated">0.00</span></div>
+<div>Budget rimanente: € <span id="remaining">0.00</span></div>
+<div>Budget rimanente stimato: € <span id="remainingEstimated">0.00</span></div>
+</div>
+
+</div>
+</section>
+
+<script>
+function addPerson(name=''){
+ const tr=document.createElement('tr');
+ tr.innerHTML=`<td><input type="text" value="${name}"></td>
+ <td><input type="checkbox" class="paid"></td>
+ <td><input type="checkbox" class="drink" checked></td>
+ <td><button class="remove" onclick="this.closest('tr').remove();calc()">✖</button></td>`;
+ document.querySelector('#people tbody').appendChild(tr);
+ calc();
+}
+
+function addItem(id){
+ const tr=document.createElement('tr');
+ tr.innerHTML=`<td><input type="text"></td>
+ <td><input type="number" step="0.01"></td>
+ <td><button class="remove" onclick="this.closest('tr').remove();calc()">✖</button></td>`;
+ document.querySelector(`#${id} tbody`).appendChild(tr);
+ calc();
+}
+
+function sumTable(id){
+ return [...document.querySelectorAll(`#${id} tbody tr td:nth-child(3) input`)]
+ .map(i=>parseFloat(i.value)||0).reduce((a,b)=>a+b,0);
+}
+
+function calc(){
+ const estimated=parseFloat(document.getElementById('estimated').value)||0;
+ const foodTotal=sumTable('items');
+ const alcoholTotal=sumTable('alcohol');
+ const totalSpent=foodTotal+alcoholTotal;
+
+ const drinkers=[...document.querySelectorAll('.drink')].filter(c=>c.checked).length;
+ const nonDrinkers=[...document.querySelectorAll('.drink')].filter(c=>!c.checked).length;
+
+ const alcoholPer=drinkers?alcoholTotal/drinkers:0;
+ const quotaNoAlcohol=Math.max(estimated-alcoholPer,0);
+
+ const paidCount=[...document.querySelectorAll('.paid')].filter(c=>c.checked).length;
+ const received=paidCount*estimated;
+
+ const totalEstimated=(drinkers*estimated)+(nonDrinkers*quotaNoAlcohol);
+ const remaining=received-totalSpent;
+ const remainingEstimated=totalEstimated-totalSpent;
+
+ document.getElementById('received').textContent=received.toFixed(2);
+ document.getElementById('alcoholTotal').textContent=alcoholTotal.toFixed(2);
+ document.getElementById('alcoholPer').textContent=alcoholPer.toFixed(2);
+ document.getElementById('noAlcohol').textContent=quotaNoAlcohol.toFixed(2);
+ document.getElementById('totalEstimated').textContent=totalEstimated.toFixed(2);
+ document.getElementById('remaining').textContent=remaining.toFixed(2);
+ document.getElementById('remainingEstimated').textContent=remainingEstimated.toFixed(2);
+}
+
+document.addEventListener('input',calc);
+
+// valori iniziali
+['Andrea','Asia','Daniele','Davide'].forEach(n=>addPerson(n));
+addItem('items');
+addItem('alcohol');
+</script>
+</body>
+</html>
