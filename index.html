@@ -28,7 +28,7 @@ input:focus{outline:none;background:#e8f0fe;border-radius:6px}
 </style>
 </head>
 <body>
-<header><h1>Ultimo dell'anno</h1></header>
+<header><h1>Festa 31 Dicembre</h1></header>
 
 <section class="card">
 <h2>Partecipanti</h2>
@@ -84,65 +84,123 @@ input:focus{outline:none;background:#e8f0fe;border-radius:6px}
 </div>
 </section>
 
-<script>
-function addPerson(name=''){
- const tr=document.createElement('tr');
- tr.innerHTML=`<td><input type="text" value="${name}"></td>
- <td><input type="checkbox" class="paid"></td>
- <td><input type="checkbox" class="drink" checked></td>
- <td><button class="remove" onclick="this.closest('tr').remove();calc()">✖</button></td>`;
- document.querySelector('#people tbody').appendChild(tr);
- calc();
+<script type="module">
+// 🔥 Firebase setup (INSERISCI QUI I TUOI DATI)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+
+  apiKey: "AIzaSyByVZHzFIUcsGibzWkCuxn1nKevrvTTOc0",
+
+  authDomain: "capodanno-c2669.firebaseapp.com",
+
+  databaseURL: "https://capodanno-c2669-default-rtdb.europe-west1.firebasedatabase.app",
+
+  projectId: "capodanno-c2669",
+
+  storageBucket: "capodanno-c2669.firebasestorage.app",
+
+  messagingSenderId: "656788642680",
+
+  appId: "1:656788642680:web:3db3d5f76679f34595468d"
+
+};
+
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const stateRef = ref(db, 'capodanno/state');
+
+let state = {
+  estimated: 10,
+  people: [],
+  items: [],
+  alcohol: []
+};
+
+// ===== RENDER =====
+function render(){
+  document.getElementById('estimated').value = state.estimated;
+
+  const pBody = document.querySelector('#people tbody');
+  pBody.innerHTML='';
+  state.people.forEach((p,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><input value="${p.name}" onchange=""></td>
+    <td><input type="checkbox" ${p.paid?'checked':''}></td>
+    <td><input type="checkbox" ${p.drink?'checked':''}></td>
+    <td><button class="remove">✖</button></td>`;
+
+    tr.querySelector('input[type=text]').oninput=e=>{state.people[i].name=e.target.value;save()};
+    tr.querySelector('.paid').onchange=e=>{state.people[i].paid=e.target.checked;save()};
+    tr.querySelector('.drink').onchange=e=>{state.people[i].drink=e.target.checked;save()};
+    tr.querySelector('button').onclick=()=>{state.people.splice(i,1);save()};
+    pBody.appendChild(tr);
+  });
+
+  renderTable('items');
+  renderTable('alcohol');
+  calc();
 }
 
-function addItem(id){
- const tr=document.createElement('tr');
- tr.innerHTML=`<td><input type="text"></td>
- <td><input type="number" step="0.01"></td>
- <td><button class="remove" onclick="this.closest('tr').remove();calc()">✖</button></td>`;
- document.querySelector(`#${id} tbody`).appendChild(tr);
- calc();
+function renderTable(id){
+  const body=document.querySelector(`#${id} tbody`);
+  body.innerHTML='';
+  state[id].forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><input value="${r.name}"></td>
+    <td><input type="number" step="0.01" value="${r.price}"></td>
+    <td><button class="remove">✖</button></td>`;
+
+    tr.querySelector('input[type=text]').oninput=e=>{state[id][i].name=e.target.value;save()};
+    tr.querySelector('input[type=number]').oninput=e=>{state[id][i].price=parseFloat(e.target.value)||0;save()};
+    tr.querySelector('button').onclick=()=>{state[id].splice(i,1);save()};
+    body.appendChild(tr);
+  });
 }
 
-function sumTable(id){
- return [...document.querySelectorAll(`#${id} tbody tr td:nth-child(3) input`)]
- .map(i=>parseFloat(i.value)||0).reduce((a,b)=>a+b,0);
-}
+// ===== CALCOLI =====
+function sum(arr){return arr.reduce((a,b)=>a+(b.price||0),0)}
 
 function calc(){
- const estimated=parseFloat(document.getElementById('estimated').value)||0;
- const foodTotal=sumTable('items');
- const alcoholTotal=sumTable('alcohol');
- const totalSpent=foodTotal+alcoholTotal;
+ const food=sum(state.items);
+ const alcohol=sum(state.alcohol);
+ const drinkers=state.people.filter(p=>p.drink).length;
+ const nonDrinkers=state.people.filter(p=>!p.drink).length;
+ const alcoholPer=drinkers?alcohol/drinkers:0;
+ const quotaNo=Math.max(state.estimated-alcoholPer,0);
+ const received=state.people.filter(p=>p.paid).length*state.estimated;
+ const totalEstimated=(drinkers*state.estimated)+(nonDrinkers*quotaNo);
+ const spent=food+alcohol;
 
- const drinkers=[...document.querySelectorAll('.drink')].filter(c=>c.checked).length;
- const nonDrinkers=[...document.querySelectorAll('.drink')].filter(c=>!c.checked).length;
-
- const alcoholPer=drinkers?alcoholTotal/drinkers:0;
- const quotaNoAlcohol=Math.max(estimated-alcoholPer,0);
-
- const paidCount=[...document.querySelectorAll('.paid')].filter(c=>c.checked).length;
- const received=paidCount*estimated;
-
- const totalEstimated=(drinkers*estimated)+(nonDrinkers*quotaNoAlcohol);
- const remaining=received-totalSpent;
- const remainingEstimated=totalEstimated-totalSpent;
-
- document.getElementById('received').textContent=received.toFixed(2);
- document.getElementById('alcoholTotal').textContent=alcoholTotal.toFixed(2);
+ document.getElementById('alcoholTotal').textContent=alcohol.toFixed(2);
  document.getElementById('alcoholPer').textContent=alcoholPer.toFixed(2);
- document.getElementById('noAlcohol').textContent=quotaNoAlcohol.toFixed(2);
+ document.getElementById('noAlcohol').textContent=quotaNo.toFixed(2);
+ document.getElementById('received').textContent=received.toFixed(2);
  document.getElementById('totalEstimated').textContent=totalEstimated.toFixed(2);
- document.getElementById('remaining').textContent=remaining.toFixed(2);
- document.getElementById('remainingEstimated').textContent=remainingEstimated.toFixed(2);
+ document.getElementById('remaining').textContent=(received-spent).toFixed(2);
+ document.getElementById('remainingEstimated').textContent=(totalEstimated-spent).toFixed(2);
 }
 
-document.addEventListener('input',calc);
+// ===== AZIONI =====
+window.addPerson=()=>{state.people.push({name:'',paid:false,drink:true});save()}
+window.addItem=id=>{state[id].push({name:'',price:0});save()}
 
-// valori iniziali
-['Andrea','Asia','Daniele','Davide'].forEach(n=>addPerson(n));
-addItem('items');
-addItem('alcohol');
+document.getElementById('estimated').oninput=e=>{state.estimated=parseFloat(e.target.value)||0;save()}
+
+// ===== FIREBASE =====
+function save(){set(stateRef,state)}
+
+onValue(stateRef,snap=>{
+ if(snap.exists()){
+  state=snap.val();
+  render();
+ }
+})
+
+// init
+save();
 </script>
 </body>
 </html>
